@@ -119,26 +119,29 @@ class cube_instance:
         self.prog = None
         self.vao = None
         self.fbo = None
+        self.fbo_size = None   # (w, h) the current fbo was built for
 
     def ensure_gl(self):
         # build GL objects lazily, on the render thread, with MXWendler's
         # context current -> create_context() attaches to *that* context.
-        if self.ctx is not None:
-            return
-        self.ctx = moderngl.create_context()
+        if self.ctx is None:
+            self.ctx = moderngl.create_context()
 
-        self.prog = self.ctx.program(
-            vertex_shader=VERTEX_SHADER, fragment_shader=FRAGMENT_SHADER)
+            self.prog = self.ctx.program(
+                vertex_shader=VERTEX_SHADER, fragment_shader=FRAGMENT_SHADER)
 
-        vbo_data, ibo_data = _cube_geometry()
-        vbo = self.ctx.buffer(vbo_data)
-        ibo = self.ctx.buffer(ibo_data)
-        self.vao = self.ctx.vertex_array(
-            self.prog, [(vbo, "3f 3f", "in_pos", "in_col")], ibo)
+            vbo_data, ibo_data = _cube_geometry()
+            vbo = self.ctx.buffer(vbo_data)
+            ibo = self.ctx.buffer(ibo_data)
+            self.vao = self.ctx.vertex_array(
+                self.prog, [(vbo, "3f 3f", "in_pos", "in_col")], ibo)
 
-        color = self.ctx.texture((self.width, self.height), 4)
-        depth = self.ctx.depth_renderbuffer((self.width, self.height))
-        self.fbo = self.ctx.framebuffer(color_attachments=[color], depth_attachment=depth)
+        # (re)build the offscreen framebuffer whenever the render size changed
+        if self.fbo is None or self.fbo_size != (self.width, self.height):
+            color = self.ctx.texture((self.width, self.height), 4)
+            depth = self.ctx.depth_renderbuffer((self.width, self.height))
+            self.fbo = self.ctx.framebuffer(color_attachments=[color], depth_attachment=depth)
+            self.fbo_size = (self.width, self.height)
 
 
 storage = {}
@@ -185,6 +188,16 @@ def onRenderFrame(frame):
     # the host (mxw_cachedmedia_plugin) snapshots and restores all GL state
     # around this call, so we don't need to unbind our fbo / reset enables here.
     return np.ascontiguousarray(bgra)
+
+
+def onSizeChange(w, h):
+    # the host changed our render size. just record it; ensure_gl() rebuilds the
+    # offscreen framebuffer at the new size on the next frame.
+    inst = storage.get(media_id)
+    if inst is None:
+        return
+    inst.width = int(w)
+    inst.height = int(h)
 
 
 def onClose():

@@ -25,6 +25,7 @@ MXWendler's media-plugin host calls three entry points in `mxw_main.py`:
 | `onOpen(uri)` | `(width, height, length, fps, has_alpha)` | report the surface format |
 | `onRenderFrame(frame)` | `H*W*4` uint8 buffer, **BGRA** byte order | produce one frame |
 | `onClose()` | – | release resources |
+| `onSizeChange(w, h)` | – | host changed the render size; rebuild buffers |
 
 Per-instance state is keyed by the integer `media_id`, which the host sets on the
 module before each call.
