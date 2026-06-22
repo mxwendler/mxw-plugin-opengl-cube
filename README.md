@@ -11,7 +11,7 @@ example of the MXWendler Python media-plugin API.
 In MXWendler, create the media with the URI:
 
 ```
-cube://spin
+generative://cube_spin_opengl
 ```
 
 (or pick **Spinning Cube** from the media create dropdown).

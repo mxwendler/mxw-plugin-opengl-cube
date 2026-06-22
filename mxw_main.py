@@ -1,7 +1,7 @@
 """
 MXWendler media plugin: render a spinning OpenGL cube into a media surface.
 
-Address a clip's media as:  cube://spin
+Address a clip's media as:  generative://cube_spin_opengl
 
 The host (mxw_cachedmedia_plugin) calls:
     onOpen(uri)           -> (width, height, length, fps, has_alpha)
