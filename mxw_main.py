@@ -114,10 +114,12 @@ class cube_instance:
         self.width = 1024
         self.height = 1024
         self.fps = 60.0
-        # rotation is integrated over time so the clip playback speed (media_speed)
-        # can scale it and reverse it: angle += dt * speed each frame.
+        # rotation is integrated over time so the clip playback speed can scale it
+        # and reverse it: angle += dt * media_speed each frame. media_speed is set
+        # per instance by the host via onSetSpeed().
         self.angle = 0.0
         self.last_time = time.monotonic()
+        self.media_speed = 1.0
         self.ctx = None
         self.prog = None
         self.vao = None
@@ -172,8 +174,7 @@ def onRenderFrame(frame):
     now = time.monotonic()
     dt = now - inst.last_time
     inst.last_time = now
-    speed = float(globals().get("media_speed", 1.0))
-    inst.angle += dt * speed
+    inst.angle += dt * inst.media_speed
 
     t = inst.angle
     aspect = inst.width / float(inst.height)
@@ -209,6 +210,15 @@ def onSizeChange(w, h):
         return
     inst.width = int(w)
     inst.height = int(h)
+
+
+def onSetSpeed(speed):
+    # the host changed the clip playback speed. store it per instance: scales the
+    # rotation, 0 freezes the spin and negative values spin it backwards.
+    inst = storage.get(media_id)
+    if inst is None:
+        return
+    inst.media_speed = float(speed)
 
 
 def onClose():

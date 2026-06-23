@@ -26,11 +26,12 @@ MXWendler's media-plugin host calls three entry points in `mxw_main.py`:
 | `onRenderFrame(frame)` | `H*W*4` uint8 buffer, **BGRA** byte order | produce one frame |
 | `onClose()` | – | release resources |
 | `onSizeChange(w, h)` | – | host changed the render size; rebuild buffers |
+| `onSetSpeed(speed)` | – | clip playback speed changed; store per instance |
 
 Per-instance state is keyed by the integer `media_id`, which the host sets on the
-module before each call. The host also sets the clip playback speed as the module
-global `media_speed` (float); the cube scales its rotation by it, so `0` freezes
-the spin and negative values spin it backwards.
+module before each call. The host pushes the clip playback speed through
+`onSetSpeed(speed)`, which the cube stores per instance and uses to scale its
+rotation, so `0` freezes the spin and negative values spin it backwards.
 
 ## Requirements
 
