@@ -114,7 +114,10 @@ class cube_instance:
         self.width = 1024
         self.height = 1024
         self.fps = 60.0
-        self.start = time.monotonic()
+        # rotation is integrated over time so the clip playback speed (media_speed)
+        # can scale it and reverse it: angle += dt * speed each frame.
+        self.angle = 0.0
+        self.last_time = time.monotonic()
         self.ctx = None
         self.prog = None
         self.vao = None
@@ -164,7 +167,15 @@ def onRenderFrame(frame):
 
     inst.ensure_gl()
 
-    t = time.monotonic() - inst.start
+    # integrate rotation scaled by the clip playback speed (set by the host as the
+    # module global 'media_speed'). speed 0 freezes, negative spins backwards.
+    now = time.monotonic()
+    dt = now - inst.last_time
+    inst.last_time = now
+    speed = float(globals().get("media_speed", 1.0))
+    inst.angle += dt * speed
+
+    t = inst.angle
     aspect = inst.width / float(inst.height)
 
     model = rotate(t * 40.0, 1, 0, 0) @ rotate(t * 55.0, 0, 1, 0)
