@@ -29,6 +29,8 @@ import math
 import numpy as np
 import moderngl
 
+import mxw_imgui  # host UI: draw controls in the clip panel (onRenderPanel)
+
 
 # ----------------------------------------------------------------------------------
 # math helpers (row-major, textbook; uploaded transposed for column-major GLSL)
@@ -46,6 +48,12 @@ def perspective(fovy_deg, aspect, near, far):
 def translate(x, y, z):
     m = np.identity(4, dtype=np.float32)
     m[0, 3], m[1, 3], m[2, 3] = x, y, z
+    return m
+
+
+def scale(s):
+    m = np.identity(4, dtype=np.float32)
+    m[0, 0] = m[1, 1] = m[2, 2] = s
     return m
 
 
@@ -120,6 +128,8 @@ class cube_instance:
         self.angle = 0.0
         self.last_time = time.monotonic()
         self.media_speed = 1.0
+        # cube edge size, controlled by the onRenderPanel() slider (per instance)
+        self.scale = 1.0
         self.ctx = None
         self.prog = None
         self.vao = None
@@ -179,7 +189,7 @@ def onRenderFrame(frame):
     t = inst.angle
     aspect = inst.width / float(inst.height)
 
-    model = rotate(t * 40.0, 1, 0, 0) @ rotate(t * 55.0, 0, 1, 0)
+    model = rotate(t * 40.0, 1, 0, 0) @ rotate(t * 55.0, 0, 1, 0) @ scale(inst.scale)
     view = translate(0, 0, -4.5)
     proj = perspective(45.0, aspect, 0.1, 100.0)
     mvp = proj @ view @ model
@@ -200,6 +210,19 @@ def onRenderFrame(frame):
     # the host (mxw_cachedmedia_plugin) snapshots and restores all GL state
     # around this call, so we don't need to unbind our fbo / reset enables here.
     return np.ascontiguousarray(bgra)
+
+
+def onRenderPanel():
+    # draw the plugin's controls in the clip ui, right above the Video Info panel.
+    # the host sets the module global 'media_id' before the call, so we address this
+    # instance. mxw is mid-frame with an active imgui context here.
+    inst = storage.get(media_id)
+    if inst is None:
+        return
+    mxw_imgui.set_next_item_width(200)
+    changed, value = mxw_imgui.slider_float("Cube Size", inst.scale, 0.1, 3.0)
+    if changed:
+        inst.scale = value
 
 
 def onSizeChange(w, h):
