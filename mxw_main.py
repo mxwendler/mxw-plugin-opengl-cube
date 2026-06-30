@@ -235,6 +235,13 @@ def onSizeChange(w, h):
     inst.height = int(h)
 
 
+def onSpeedRange():
+    # the host forwards this to mxw_cached_media::get_speed_range(). allow the clip
+    # playback speed from -5..5: the cube integrates speed into its rotation, so 0
+    # freezes the spin and negative values spin it backwards.
+    return (-5.0, 5.0)
+
+
 def onSetSpeed(speed):
     # the host changed the clip playback speed. store it per instance: scales the
     # rotation, 0 freezes the spin and negative values spin it backwards.
